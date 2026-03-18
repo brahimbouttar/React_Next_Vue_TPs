@@ -36,9 +36,14 @@
       "color": "#2ecc71"
     },
     {
+      "id": "b943",
+      "name": "slm",
+      "color": "#3498db"
+    },
+    {
+      "id": "07cf",
       "name": "hi",
-      "color": "#3498db",
-      "id": "6c1c"
+      "color": "#3498db"
     }
   ],
   "columns": [
