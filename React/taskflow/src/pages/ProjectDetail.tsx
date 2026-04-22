@@ -2,17 +2,23 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom'; 
 import { useAuth } from '../features/auth/AuthContext'; 
 import api from '../api/axios'; 
-import Header from '../components/HeaderMUI'; 
+//import Header from '../components/HeaderMUI'; 
 import styles from './ProjectDetail.module.css'; 
+import HeaderBS from '../components/HeaderBS';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../store';
+import { logout } from '../features/auth/authSlice';
   
 interface Project { id: string; name: string; color: string; } 
   
 export default function ProjectDetail() { 
   const { id } = useParams(); 
   const navigate = useNavigate(); 
-  const { state: authState, dispatch } = useAuth(); 
+  //const { state: authState, dispatch } = useAuth(); 
   const [project, setProject] = useState<Project | null>(null); 
   const [loading, setLoading] = useState(true); 
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
   
   useEffect(() => { 
     api.get(`/projects/${id}`) 
@@ -26,12 +32,12 @@ export default function ProjectDetail() {
   
   return ( 
     <div className={styles.layout}> 
-      <Header 
-        title="TaskFlow" 
-        onMenuClick={() => navigate('/dashboard')} 
-        userName={authState.user?.name}  // BUG 2 fix
-        onLogout={() => dispatch({ type: 'LOGOUT' })} 
-      /> 
+      <HeaderBS
+              title="TaskFlow"
+              onMenuClick={() => navigate('/dashboard')}
+              userName={user?.name}
+              onLogout={() => dispatch(logout())} //{ type: "LOGOUT" }
+      />
       <main className={styles.main}> 
         <div className={styles.header}> 
           <span className={styles.dot} style={{ background: project.color }} /> 

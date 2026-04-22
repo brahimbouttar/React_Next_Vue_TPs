@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../features/auth/AuthContext";
-import api from "../api/axios";
-// import HeaderMUI from "../components/HeaderMUI";
-// import Header from "../components/Header";
+import { useState, useEffect, useCallback } from "react";
 import HeaderBS from "../components/HeaderBS";
-
 import Sidebar from "../components/Sidebar";
 import MainContent from "../components/MainContent";
 import ProjectForm from "../components/ProjectForm";
 import styles from "./Dashboard.module.css";
-import axios from "axios";
 import Tooltip from "../components/Tooltip";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../features/auth/authSlice.ts";
+import type { RootState } from "../store.ts";
+import { memo } from "react";
+import useProjects from '../hooks/useProjects'; 
 
 interface Project {
   id: string;
@@ -24,110 +23,32 @@ interface Column {
 }
 
 export default function Dashboard() {
-  const { state: authState, dispatch } = useAuth();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const MemoizedSidebar = memo(Sidebar);
+  const { projects, columns, loading, addProject, renameProject, deleteProject } = useProjects();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [columns, setColumns] = useState<Column[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  // GET — charger les données au montage
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [projRes, colRes] = await Promise.all([
-          api.get("/projects"),
-          api.get("/columns"),
-        ]);
-        setProjects(projRes.data);
-        setColumns(colRes.data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  // POST — ajouter un projet
-  async function addProject(name: string, color: string) {
-    setSaving(true);
-    setError(null);
-    try {
-      const { data } = await api.post("/projects", { name, color });
-      setProjects((prev) => [...prev, data]);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message || `Erreur ${err.response?.status}`,
-        );
-      } else {
-        setError("Erreur inconnue");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  // PUT — renommer un projet
-  async function renameProject(id: string, name: string, color: string) {
-    setSaving(true);
-    setError(null);
-    try {
-      const { data } = await api.put(`/projects/${id}`, { name, color });
-      setProjects((prev) => prev.map((p) => (p.id === id ? data : p)));
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message || `Erreur ${err.response?.status}`,
-        );
-      } else {
-        setError("Erreur inconnue");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  // DELETE — supprimer un projet
-  async function deleteProject(id: string) {
-    setSaving(true);
-    setError(null);
-    try {
-      await api.delete(`/projects/${id}`);
-      setProjects((prev) => prev.filter((p) => p.id !== id));
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(
-          err.response?.data?.message || `Erreur ${err.response?.status}`,
-        );
-      } else {
-        setError("Erreur inconnue");
-      }
-    } finally {
-      setSaving(false);
-    }
-  }
+  const handleRename = useCallback((project: Project) => {
+    renameProject(project.id, project.name, project.color);
+  }, [renameProject]);
 
   if (loading) return <div className={styles.loading}>Chargement...</div>;
-
+  const dangerousName = '<img src=x onerror=alert("HACK")>';
   return (
     <div className={styles.layout}>
       <HeaderBS
         title="TaskFlow"
         onMenuClick={() => setSidebarOpen((p) => !p)}
-        userName={authState.user?.name}
-        onLogout={() => dispatch({ type: "LOGOUT" })}
+        userName={user?.name}
+        onLogout={() => dispatch(logout())} //{ type: "LOGOUT" }
       />
       <div className={styles.body}>
-        <Sidebar
+        <MemoizedSidebar
           projects={projects}
           isOpen={sidebarOpen}
-          onRename={renameProject}
-          onDelete={deleteProject}
+          onRename={handleRename}
         />
         <div className={styles.content}>
           <div className={styles.toolbar}>
@@ -148,6 +69,8 @@ export default function Dashboard() {
                 onCancel={() => setShowForm(false)}
               />
             )}
+            <p>{dangerousName}</p>
+            <div dangerouslySetInnerHTML={{ __html: dangerousName }} />
           </div>
           <Tooltip />
           <MainContent columns={columns} />
