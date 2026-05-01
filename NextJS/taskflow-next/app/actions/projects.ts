@@ -1,46 +1,42 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-
+import { prisma } from '@/lib/prisma';
+// ADD
 export async function addProject(formData: FormData) {
     const name = formData.get('name') as string;
     const color = formData.get('color') as string;
-
-    await fetch('http://localhost:4000/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color }),
-    });
-
+    await prisma.project.create({ data: { name, color } });
     revalidatePath('/dashboard');
 }
+// RENAME
 export async function renameProject(formData: FormData) {
-    const id = formData.get('id') as string;
-    const newName = formData.get('name') as string;
-    const color = formData.get('color') as string;
+    const id = Number(formData.get('id'));
+    const name = formData.get('name') as string;
 
-    if (!id || !newName) {
-        throw new Error('Missing fields');
+    if (isNaN(id) || !name) {
+        throw new Error('Invalid input');
     }
 
-    await fetch(`http://localhost:4000/projects/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName, color }),
+    await prisma.project.update({
+        where: { id },
+        data: { name }
     });
 
     revalidatePath('/dashboard');
 }
 
-export async function deleteProject(formData: FormData) {
-    const id = formData.get('id') as string;
 
-    if (!id) {
-        throw new Error('Missing ID');
+// DELETE
+export async function deleteProject(formData: FormData) {
+    const id = Number(formData.get('id'));
+
+    if (isNaN(id)) {
+        throw new Error('Invalid ID');
     }
 
-    await fetch(`http://localhost:4000/projects/${id}`, {
-        method: 'DELETE',
+    await prisma.project.delete({
+        where: { id }
     });
 
     revalidatePath('/dashboard');
